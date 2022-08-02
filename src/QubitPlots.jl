@@ -5,7 +5,7 @@ module QubitPlots
 using Suppressor: @suppress_err
 using Reexport
 @suppress_err @reexport using Plots
-import Makie, GLMakie, CairoMakie
+import GLMakie, CairoMakie #, Makie
 
 using LaTeXStrings
 using Statistics
