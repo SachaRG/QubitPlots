@@ -5,7 +5,6 @@ module QubitPlots
 using Suppressor: @suppress_err
 using Reexport
 @suppress_err @reexport using Plots
-import GLMakie, CairoMakie #, Makie
 
 using LaTeXStrings
 using Statistics
@@ -36,6 +35,6 @@ include("two_qubit_plots.jl")
 export bell_plot
 
 include("heatplots.jl")
-export T2_ΓZ_plot, heatplot
+export HeatPlot, heatplot, T2_ΓZ_plot
 
 end # module QubitPlots
