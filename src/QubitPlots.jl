@@ -36,6 +36,6 @@ include("two_qubit_plots.jl")
 export bell_plot
 
 include("heatplots.jl")
-export T2_ΓZ_plot
+export T2_ΓZ_plot, heatplot
 
 end # module QubitPlots
