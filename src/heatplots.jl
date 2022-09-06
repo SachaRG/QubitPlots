@@ -43,8 +43,14 @@ end
 
 
 function T2_ΓZ_plot(df::DataFrame)
-	fids = df.sys_fids
-	ΓZs = union(df.ΓZ);
+	ΓZs = union(df.ΓZ)
 	T2s = union(df.T2)
-	return plot(heatplot, ΓZs, T2s, xlabel = "ΓZ (MHz)", ylabel = "T2 (μs)", title="fidelities with target state")
+	fids = reshape(df.sys_fids, (length(ΓZs),length(T2s)))
+	return plot(heatplot, ΓZs, T2s, fids, xlabel = "ΓZ (MHz)", ylabel = "T2 (μs)", title="fidelities with target state")
+end
+
+function T2_ΓZ_plot(dfs...)
+	df = vcat(dfs...)
+	df_sorted = sort(df, [:T2, :ΓZ])
+	T2_ΓZ_plot(df_sorted)
 end
