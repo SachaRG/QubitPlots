@@ -38,22 +38,68 @@ function single_qubit_plots(sol::Solution)
 end
 
 
-@userplot BellPlot
-@recipe function f(bp::BellPlot)
+# @userplot BellPlot
+# @recipe function f(bp::BellPlot)
+# 	sol = bp.args[1]
+#
+# 	basis = bell_basis
+# 	exps = map(op -> expectations(sol, dm(op)), basis)
+#
+# 	# Plot time series --------------------------------------------------------
+#
+# 	title --> "Bell states"
+# 	legend --> :outerright
+# 	label --> hcat(bell_basis_labels...)
+# 	xlabel --> "t (μs)"
+# 	ylabel --> "Bell state populations"
+#
+# 	colors = palette(:rainbow)[1:4]
+# 	# palette := :rainbow
+# 	linealpha --> 1
+#
+# 	legendfontsize --> 10
+# 	titlefontsize --> 12
+# 	xtickfontsize --> 10
+# 	ytickfontsize --> 10
+# 	xguidefontsize --> 10
+# 	yguidefontsize --> 10
+# 	size --> (600,300)
+# 	linewidth --> 1.5
+# 	margin --> 5mm
+#
+# 	ylims --> [0, 1]
+#
+#
+# 	for (c, exp) in zip(colors, exps)
+# 		color := c
+# 		@series begin
+# 			sol.t, exp
+#
+# 		end
+#
+# 	end
+# end
+
+mutable struct BellPlot end
+const bellplot = BellPlot()
+@recipe function f(bp::BellPlot; colorscheme = :rainbow, plotpurity=false)
 	sol = bp.args[1]
 
 	basis = bell_basis
 	exps = map(op -> expectations(sol, dm(op)), basis)
+	if plotpurity
+		push!(exps, purity.(sol.ρ))
+	end
 
 	# Plot time series --------------------------------------------------------
 
 	title --> "Bell states"
 	legend --> :outerright
-	label --> hcat(bell_basis_labels...)
+	label --> hcat(bell_basis_labels..., "purity")
 	xlabel --> "t (μs)"
 	ylabel --> "Bell state populations"
 
-	palette := :rainbow
+	colors = palette(colorscheme)[1:length(exps)]
 	linealpha --> 1
 
 	legendfontsize --> 10
@@ -69,7 +115,8 @@ end
 	ylims --> [0, 1]
 
 
-	for exp in exps
+	for (c, exp) in zip(colors, exps)
+		color := c
 
 		@series begin
 			sol.t, exp
@@ -77,3 +124,77 @@ end
 
 	end
 end
+
+# function ensavg(ens)
+#     ρf = last(ens[1].ρ)
+#     ρs = typeof(ρf) <: Ket ?
+#         	mean(map(sol -> dm.(sol.ρ), ens)) :
+#          	mean(map(sol -> sol.ρ, ens))
+#     return Solution(ens[1].t, ρs)
+# end
+#
+# function plotensemble(ens, avgsol, path; 	alpha=0.1,
+# 											Nt=100,
+# 											highlight_traj=0,
+# 											highlight_width=0.5,
+# 											plot_fidelity=false,
+# 											plot_avg=true,
+# 											title="",
+# 											legend=:none,
+# 											kwargs...)
+#     al = plot_avg ? 1 : 0
+# 	p = bellplot(avgsol; title = title,
+# 					label = :none,
+#                     legend = legend,
+#                     size=(500,350),
+#                     legendfontsize = 12,
+#                     xtickfontsize=12,
+#                     ytickfontsize=12,
+#                     xlabelfontsize=12,
+#                     ylabelfontsize=12,
+#                     linewidth=3,
+# 					linealpha = al,
+#                     plotpurity=true, kwargs...)
+#
+#     @showprogress for sol in ens[1:Nt]
+#         bellplot!(sol; title = title,
+# 						legend = legend,
+#                         label = :none,
+#                         size=(500,350),
+#                         legendfontsize = 12,
+#                         xtickfontsize=12,
+#                         ytickfontsize=12,
+#                         xlabelfontsize=12,
+#                         ylabelfontsize=12,
+#                         linealpha = alpha,
+#                         plotpurity=true, kwargs...)
+#     end
+# 	if highlight_traj > 0
+# 	    bellplot!(Solution(ens[highlight_traj], bell_basis);
+# 						  # label = :none,
+# 						  legend = legend,
+# 	                      size=(500,350),
+# 	                      legendfontsize = 12,
+# 	                      xtickfontsize=12,
+# 	                      ytickfontsize=12,
+# 	                      xlabelfontsize=12,
+# 	                      ylabelfontsize=12,
+# 	                      linewidth = highlight_width,
+# 	                      plotpurity=true,
+# 	                      title=title, kwargs...)
+# 	end
+# 	if plot_fidelity
+# 		plot!(avgsol.t, map(ρ -> fidelity(ρ, Ψp), avgsol.ρ);
+# 						  label = :none,
+# 						  color = :black,
+# 						  linewidth = 3)
+#   	end
+#
+#     savefig(p, joinpath(path, "ensemble.png"))
+#     return p
+# end
+#
+# function plotensemble(ens, path; kwargs...)
+# 	avgsol = ensavg(ens)
+# 	return plotensemble(ens, avgsol, path; kwargs...)
+# end

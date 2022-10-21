@@ -32,7 +32,7 @@ export qubit_plot
 export blochprojections
 
 include("two_qubit_plots.jl")
-export bell_plot
+export bellplot, BellPlot
 
 include("heatplots.jl")
 export HeatPlot, heatplot, T2_ΓZ_plot
