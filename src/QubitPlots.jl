@@ -16,6 +16,18 @@ using QuantumCircuits.SingleQubitOperators
 using QuantumCircuits.TwoQubitOperators
 
 
+default(linealpha = 1,
+		legendfontsize = 10,
+		titlefontsize = 12,
+		xtickfontsize = 10,
+		ytickfontsize = 10,
+		xguidefontsize = 10,
+		yguidefontsize = 10,
+		size = (600,300),
+		linewidth = 1.5,
+		margin = 5mm)
+
+
 "---- Definitions of functions and constants ----"
 
 include("blochsphere.jl")

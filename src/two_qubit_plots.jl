@@ -38,52 +38,10 @@ function single_qubit_plots(sol::Solution)
 end
 
 
-# @userplot BellPlot
-# @recipe function f(bp::BellPlot)
-# 	sol = bp.args[1]
-#
-# 	basis = bell_basis
-# 	exps = map(op -> expectations(sol, dm(op)), basis)
-#
-# 	# Plot time series --------------------------------------------------------
-#
-# 	title --> "Bell states"
-# 	legend --> :outerright
-# 	label --> hcat(bell_basis_labels...)
-# 	xlabel --> "t (μs)"
-# 	ylabel --> "Bell state populations"
-#
-# 	colors = palette(:rainbow)[1:4]
-# 	# palette := :rainbow
-# 	linealpha --> 1
-#
-# 	legendfontsize --> 10
-# 	titlefontsize --> 12
-# 	xtickfontsize --> 10
-# 	ytickfontsize --> 10
-# 	xguidefontsize --> 10
-# 	yguidefontsize --> 10
-# 	size --> (600,300)
-# 	linewidth --> 1.5
-# 	margin --> 5mm
-#
-# 	ylims --> [0, 1]
-#
-#
-# 	for (c, exp) in zip(colors, exps)
-# 		color := c
-# 		@series begin
-# 			sol.t, exp
-#
-# 		end
-#
-# 	end
-# end
 
 mutable struct BellPlot end
 const bellplot = BellPlot()
-@recipe function f(bp::BellPlot; colorscheme = :rainbow, plotpurity=false)
-	sol = bp.args[1]
+@recipe function f(::BellPlot, sol::Solution; colorscheme = :rainbow, plotpurity=false)
 
 	basis = bell_basis
 	exps = map(op -> expectations(sol, dm(op)), basis)
