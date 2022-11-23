@@ -1,3 +1,14 @@
+default(linealpha = 1,
+		legendfontsize = 10,
+		titlefontsize = 12,
+		xtickfontsize = 10,
+		ytickfontsize = 10,
+		xguidefontsize = 10,
+		yguidefontsize = 10,
+		size = (600,300),
+		linewidth = 1.5,
+		margin = 5mm)
+
 
 # for plotting reduced qubit evolution in a two-qubit system
 function single_qubit_plots(sol::Solution)
@@ -36,8 +47,6 @@ function single_qubit_plots(sol::Solution)
 
 	plot(p1, p2, layout = l, link=:y, size=(600,300), legendfontsize=8, titlefontsize=12, legend=:outerright)
 end
-
-
 
 mutable struct BellPlot end
 const bellplot = BellPlot()
@@ -83,76 +92,94 @@ const bellplot = BellPlot()
 	end
 end
 
-# function ensavg(ens)
-#     ρf = last(ens[1].ρ)
-#     ρs = typeof(ρf) <: Ket ?
-#         	mean(map(sol -> dm.(sol.ρ), ens)) :
-#          	mean(map(sol -> sol.ρ, ens))
-#     return Solution(ens[1].t, ρs)
-# end
-#
-# function plotensemble(ens, avgsol, path; 	alpha=0.1,
-# 											Nt=100,
-# 											highlight_traj=0,
-# 											highlight_width=0.5,
-# 											plot_fidelity=false,
-# 											plot_avg=true,
-# 											title="",
-# 											legend=:none,
-# 											kwargs...)
-#     al = plot_avg ? 1 : 0
-# 	p = bellplot(avgsol; title = title,
-# 					label = :none,
-#                     legend = legend,
-#                     size=(500,350),
-#                     legendfontsize = 12,
-#                     xtickfontsize=12,
-#                     ytickfontsize=12,
-#                     xlabelfontsize=12,
-#                     ylabelfontsize=12,
-#                     linewidth=3,
-# 					linealpha = al,
-#                     plotpurity=true, kwargs...)
-#
-#     @showprogress for sol in ens[1:Nt]
-#         bellplot!(sol; title = title,
-# 						legend = legend,
-#                         label = :none,
-#                         size=(500,350),
-#                         legendfontsize = 12,
-#                         xtickfontsize=12,
-#                         ytickfontsize=12,
-#                         xlabelfontsize=12,
-#                         ylabelfontsize=12,
-#                         linealpha = alpha,
-#                         plotpurity=true, kwargs...)
-#     end
-# 	if highlight_traj > 0
-# 	    bellplot!(Solution(ens[highlight_traj], bell_basis);
-# 						  # label = :none,
-# 						  legend = legend,
-# 	                      size=(500,350),
-# 	                      legendfontsize = 12,
-# 	                      xtickfontsize=12,
-# 	                      ytickfontsize=12,
-# 	                      xlabelfontsize=12,
-# 	                      ylabelfontsize=12,
-# 	                      linewidth = highlight_width,
-# 	                      plotpurity=true,
-# 	                      title=title, kwargs...)
-# 	end
-# 	if plot_fidelity
-# 		plot!(avgsol.t, map(ρ -> fidelity(ρ, Ψp), avgsol.ρ);
-# 						  label = :none,
-# 						  color = :black,
-# 						  linewidth = 3)
-#   	end
-#
-#     savefig(p, joinpath(path, "ensemble.png"))
-#     return p
-# end
-#
-# function plotensemble(ens, path; kwargs...)
-# 	avgsol = ensavg(ens)
-# 	return plotensemble(ens, avgsol, path; kwargs...)
-# end
+import Simulations.Protocols.TwoQubitFeedback: θCR, Δθ, mag
+
+mutable struct CRPlot end
+const crplot = CRPlot()
+@recipe function f(::CRPlot, qsol::QSol; colorscheme = :rainbow, plotpurity=false)
+
+	sys = qsol.sys
+	fil = qsol.fil
+
+	@unpack td, dt, Ωmax, Δt_co, Δt_cn = qsol.protocol
+	Ωθ = mag(θCR, Ωmax, Δt_co)
+	ΩΔθ = mag(Δθ, Ωmax, Δt_cn)
+
+	# Defaults for all plots
+	title --> "Bell states"
+	legend --> :outerright
+	label --> hcat(bell_basis_labels...) #, "purity")
+	xlabel --> "t (μs)"
+	ylabel --> "Bell state populations"
+	linealpha --> 1
+	margin := 1mm
+	size --> (500, 600)
+
+	layout :=  fil == nothing ? (@layout [a ; b ; c]) : (@layout [a ; b ; c ; d])
+
+	# subplot 1: bell states
+	basis = bell_basis
+	exps = map(op -> expectations(sys, dm(op)), basis)
+	if plotpurity
+		push!(exps, purity.(sys.ρ))
+	end
+	colors = palette(colorscheme)[1:length(exps)]
+
+	for (c, exp) in zip(colors, exps)
+		color := c
+
+		@series begin
+			ylims := [0,1]
+			subplot := 1
+			sys.t, exp
+		end
+	end
+
+	if fil != nothing
+
+		basis = bell_basis
+		exps = map(op -> expectations(fil, dm(op)), basis)
+		if plotpurity
+			push!(exps, purity.(fil.ρ))
+		end
+
+		for (c, exp) in zip(colors, exps)
+			color := c
+
+			@series begin
+				ylims := [0, 1]
+				subplot := 2
+				fil.t, exp
+			end
+		end
+	end
+
+
+	# subplot 2, 3 calculations: drive strengths
+	delay = Int64(round(td / dt)) + 1
+	ts = fil.t[delay:end]
+	mag_co_timeseries = Ωθ.(fil.ρ[delay:end]) ./ 2π
+	mag_cn_timeseries = ΩΔθ.(fil.ρ[delay:end]) ./ 2π
+
+	# subplot 2: co-rotating drive strength
+	@series begin
+		xlims := [fil.t[1], fil.t[end]]
+		subplot := fil != nothing ? 3 : 2
+		ylabel := "MHz"
+		label := ""
+		title := "co-rotating drive"
+		color := palette(:tab10)[1]
+		ts, mag_co_timeseries
+	end
+
+	# subplot 3: counter-rotating drive strength
+	@series begin
+		xlims := [fil.t[1], fil.t[end]]
+		subplot := fil != nothing ? 4 : 3
+		ylabel := "MHz"
+		label := ""
+		title := "counter-rotating drive"
+		color := palette(:tab10)[2]
+		ts, mag_cn_timeseries
+	end
+end
